@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "36065605768",
+    "project_id": "equipment-system-f4cac",
+    "storage_bucket": "equipment-system-f4cac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:36065605768:android:d7d79f29a2a6bd65efc73d",
+        "android_client_info": {
+          "package_name": "com.example.equipment_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "36065605768-blqv5t8jr3eq5l3kv85mk2e7uncmja29.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6gVoqa7iQIPBxEXCq4nOBFK6_9VVnBwU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "36065605768-blqv5t8jr3eq5l3kv85mk2e7uncmja29.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "36065605768-tpa8rv9j9ahfc29v79morjhpn676du06.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.equipmentApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
