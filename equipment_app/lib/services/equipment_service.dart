@@ -1,14 +1,12 @@
 // lib/services/equipment_service.dart
-import 'dart:io';
+// Firebase Storage ถูกเอาออกแล้ว → ใช้ Cloudinary แทน (ผ่าน EquipmentProvider)
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
 import '../models/equipment_model.dart';
 import '../models/check_history_model.dart';
 
 class EquipmentService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
   final _uuid = const Uuid();
 
   // ─── Collection References ──────────────────────────────────────────────
@@ -21,19 +19,14 @@ class EquipmentService {
     return docRef.id;
   }
 
-  // ─── READ ALL ────────────────────────────────────────────────────────────
+  // ─── READ ALL (Stream) ────────────────────────────────────────────────────
   Stream<List<EquipmentModel>> getEquipmentsStream() {
-    return _equipments
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
+    return _equipments.orderBy('createdAt', descending: true).snapshots().map(
           (snap) => snap.docs
-              .map(
-                (doc) => EquipmentModel.fromMap(
-                  doc.data() as Map<String, dynamic>,
-                  doc.id,
-                ),
-              )
+              .map((doc) => EquipmentModel.fromMap(
+                    doc.data() as Map<String, dynamic>,
+                    doc.id,
+                  ))
               .toList(),
         );
   }
@@ -62,43 +55,22 @@ class EquipmentService {
     return null;
   }
 
-  // ─── SEARCH (Full-text simulation) ───────────────────────────────────────
+  // ─── SEARCH ───────────────────────────────────────────────────────────────
   Future<List<EquipmentModel>> searchEquipments(String query) async {
     final q = query.trim().toUpperCase();
     final snap = await _equipments.get();
     return snap.docs
-        .map(
-          (doc) => EquipmentModel.fromMap(
-            doc.data() as Map<String, dynamic>,
-            doc.id,
-          ),
-        )
-        .where(
-          (e) =>
-              e.assetCode.toUpperCase().contains(q) ||
-              e.name.toUpperCase().contains(q) ||
-              e.brand.toUpperCase().contains(q) ||
-              e.category.toUpperCase().contains(q) ||
-              e.location.toUpperCase().contains(q),
-        )
+        .map((doc) => EquipmentModel.fromMap(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ))
+        .where((e) =>
+            e.assetCode.toUpperCase().contains(q) ||
+            e.name.toUpperCase().contains(q) ||
+            e.brand.toUpperCase().contains(q) ||
+            e.category.toUpperCase().contains(q) ||
+            e.location.toUpperCase().contains(q))
         .toList();
-  }
-
-  // ─── FILTER BY STATUS ────────────────────────────────────────────────────
-  Stream<List<EquipmentModel>> getByStatus(EquipmentStatus status) {
-    return _equipments
-        .where('status', isEqualTo: status.value)
-        .snapshots()
-        .map(
-          (snap) => snap.docs
-              .map(
-                (doc) => EquipmentModel.fromMap(
-                  doc.data() as Map<String, dynamic>,
-                  doc.id,
-                ),
-              )
-              .toList(),
-        );
   }
 
   // ─── UPDATE ──────────────────────────────────────────────────────────────
@@ -115,13 +87,11 @@ class EquipmentService {
     required String checkedByName,
     String note = '',
   }) async {
-    // อัปเดตสถานะ
     await _equipments.doc(equipment.id).update({
       'status': newStatus.value,
       'updatedAt': DateTime.now().toIso8601String(),
     });
 
-    // บันทึกประวัติ
     final history = CheckHistoryModel(
       id: _uuid.v4(),
       equipmentId: equipment.id,
@@ -138,31 +108,9 @@ class EquipmentService {
   }
 
   // ─── DELETE ──────────────────────────────────────────────────────────────
+  // หมายเหตุ: การลบรูปจาก Cloudinary จัดการใน EquipmentProvider แล้ว
   Future<void> deleteEquipment(String id) async {
-    // ลบรูปภาพถ้ามี
-    final eq = await getEquipmentById(id);
-    if (eq?.imageUrl != null) {
-      try {
-        await _storage.refFromURL(eq!.imageUrl!).delete();
-      } catch (_) {}
-    }
     await _equipments.doc(id).delete();
-  }
-
-  // ─── UPLOAD IMAGE ────────────────────────────────────────────────────────
-  Future<String> uploadImage(File file, String assetCode) async {
-    final fileName =
-        '${assetCode}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final ref = _storage.ref().child('equipment_images/$fileName');
-    await ref.putFile(file);
-    return await ref.getDownloadURL();
-  }
-
-  // ─── DELETE IMAGE ────────────────────────────────────────────────────────
-  Future<void> deleteImage(String url) async {
-    try {
-      await _storage.refFromURL(url).delete();
-    } catch (_) {}
   }
 
   // ─── CHECK HISTORY ───────────────────────────────────────────────────────
@@ -172,41 +120,13 @@ class EquipmentService {
       query = query.where('equipmentId', isEqualTo: equipmentId);
     }
     return query.snapshots().map(
-      (snap) => snap.docs
-          .map(
-            (doc) => CheckHistoryModel.fromMap(
-              doc.data() as Map<String, dynamic>,
-              doc.id,
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  // ─── DASHBOARD STATS ─────────────────────────────────────────────────────
-  Future<Map<String, int>> getDashboardStats() async {
-    final snap = await _equipments.get();
-    final items = snap.docs
-        .map(
-          (doc) => EquipmentModel.fromMap(
-            doc.data() as Map<String, dynamic>,
-            doc.id,
-          ),
-        )
-        .toList();
-
-    final stats = <String, int>{
-      'total': items.length,
-      'normal': 0,
-      'damaged': 0,
-      'repairing': 0,
-      'disposed': 0,
-      'lost': 0,
-    };
-    for (final e in items) {
-      stats[e.status.value] = (stats[e.status.value] ?? 0) + 1;
-    }
-    return stats;
+          (snap) => snap.docs
+              .map((doc) => CheckHistoryModel.fromMap(
+                    doc.data() as Map<String, dynamic>,
+                    doc.id,
+                  ))
+              .toList(),
+        );
   }
 
   // ─── IMPORT FROM CSV ─────────────────────────────────────────────────────
@@ -227,9 +147,8 @@ class EquipmentService {
         'status': 'normal',
         'imageUrl': null,
         'serialNumber': (row['serialNumber'] ?? '').toString().trim(),
-        'purchasePrice': double.tryParse(
-          row['purchasePrice']?.toString() ?? '',
-        ),
+        'purchasePrice':
+            double.tryParse(row['purchasePrice']?.toString() ?? ''),
         'purchaseDate': row['purchaseDate'],
         'createdBy': uid,
         'createdAt': now,

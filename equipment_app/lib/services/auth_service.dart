@@ -7,6 +7,7 @@ import '../models/user_model.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  String _normalizeEmail(String email) => email.trim().toLowerCase();
 
   // Stream สำหรับ auth state
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -17,8 +18,9 @@ class AuthService {
   // ─── Login ──────────────────────────────────────────────────────────────
   Future<UserModel?> login(String email, String password) async {
     try {
+      final normalizedEmail = _normalizeEmail(email);
       final credential = await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
+        email: normalizedEmail,
         password: password.trim(),
       );
       if (credential.user != null) {
@@ -48,16 +50,17 @@ class AuthService {
       );
 
       final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      final normalizedEmail = _normalizeEmail(email);
 
       final credential = await secondaryAuth.createUserWithEmailAndPassword(
-        email: email.trim(),
+        email: normalizedEmail,
         password: password.trim(),
       );
 
       if (credential.user != null) {
         final user = UserModel(
           uid: credential.user!.uid,
-          email: email.trim(),
+          email: normalizedEmail,
           fullName: fullName,
           department: department,
           role: role,
@@ -65,7 +68,7 @@ class AuthService {
         );
 
         // ใช้ Firestore จาก secondary app เพื่อให้ auth token ตรงกัน
-        final secondaryDb = FirebaseFirestore.instanceFor(app: secondaryApp!);
+        final secondaryDb = FirebaseFirestore.instanceFor(app: secondaryApp);
         await secondaryDb
             .collection('users')
             .doc(credential.user!.uid)
@@ -116,7 +119,7 @@ class AuthService {
 
   // ─── Reset Password ──────────────────────────────────────────────────────
   Future<void> resetPassword(String email) async {
-    await _auth.sendPasswordResetEmail(email: email.trim());
+    await _auth.sendPasswordResetEmail(email: _normalizeEmail(email));
   }
 
   // ─── Update User ─────────────────────────────────────────────────────────
@@ -131,7 +134,12 @@ class AuthService {
 
   // ─── Error Handler ───────────────────────────────────────────────────────
   String _handleAuthError(FirebaseAuthException e) {
-    switch (e.code) {
+    final code = e.code.toLowerCase();
+    if (code.contains('api-key') || code == 'app-not-authorized') {
+      return 'การตั้งค่า Firebase ของแอปไม่ถูกต้อง กรุณาตั้งค่า FlutterFire ใหม่แล้วลองอีกครั้ง';
+    }
+
+    switch (code) {
       // อีเมลหรือรหัสผ่านไม่ถูกต้อง (Firebase v5+ ใช้ invalid-credential แทน)
       case 'invalid-credential':
       case 'user-not-found':
@@ -153,7 +161,9 @@ class AuthService {
       case 'operation-not-allowed':
         return 'ไม่อนุญาตให้เข้าสู่ระบบด้วยวิธีนี้';
       default:
-        return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        return e.message?.isNotEmpty == true
+            ? e.message!
+            : 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
     }
   }
 }

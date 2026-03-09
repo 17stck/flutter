@@ -1,6 +1,5 @@
 // lib/screens/auth/register_screen.dart
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import '../../utils/app_theme.dart';
 import '../../services/auth_service.dart';
@@ -102,6 +101,11 @@ class _RegisterScreenState extends State<RegisterScreen>
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  bool _isValidEmail(String input) {
+    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    return emailRegex.hasMatch(input.trim());
   }
 
   @override
@@ -249,7 +253,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 validator: (v) {
                                   if (v == null || v.isEmpty)
                                     return 'กรุณากรอกอีเมล';
-                                  if (!v.contains('@'))
+                                  if (!_isValidEmail(v))
                                     return 'รูปแบบอีเมลไม่ถูกต้อง';
                                   return null;
                                 },
