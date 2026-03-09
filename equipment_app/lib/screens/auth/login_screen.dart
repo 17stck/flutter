@@ -83,6 +83,11 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  bool _isValidEmail(String input) {
+    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    return emailRegex.hasMatch(input.trim());
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -232,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 validator: (v) {
                                   if (v == null || v.isEmpty)
                                     return 'กรุณากรอกอีเมล';
-                                  if (!v.contains('@'))
+                                  if (!_isValidEmail(v))
                                     return 'รูปแบบอีเมลไม่ถูกต้อง';
                                   return null;
                                 },

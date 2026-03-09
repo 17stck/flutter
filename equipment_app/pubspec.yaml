@@ -22,6 +22,8 @@ dependencies:
   # Image
   image_picker: ^1.0.7
   cached_network_image: ^3.3.1
+  http: ^1.2.0
+  http_parser: ^4.0.2
 
   # QR Code
   mobile_scanner: ^3.5.7
@@ -40,6 +42,7 @@ dependencies:
   shimmer: ^3.0.0
   fl_chart: ^0.66.2
   lottie: ^3.0.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -50,5 +53,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
-    - assets/icons/
     - assets/animations/

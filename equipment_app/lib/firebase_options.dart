@@ -21,15 +21,18 @@ class DefaultFirebaseOptions {
   }
 
   // ─── ดึงค่าจาก Firebase Console > Project Settings ─────────────────
-  // Web (ถ้าต้องการ)
+
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
+    apiKey: 'AIzaSyA8aE_GVEbWzNp0LAi4E_vJK7oFTvbiZO0',
+    appId: '1:36065605768:web:87abb26c31d58beaefc73d',
     messagingSenderId: '36065605768',
     projectId: 'equipment-system-f4cac',
     authDomain: 'equipment-system-f4cac.firebaseapp.com',
-    storageBucket: 'equipment-system-f4cac.appspot.com',
+    storageBucket: 'equipment-system-f4cac.firebasestorage.app',
+    measurementId: 'G-V8KHSYNTN3',
   );
+
+  // Web (ถ้าต้องการ)
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyC6gVoqa7iQIPBxEXCq4nOBFK6_9VVnBwU',
